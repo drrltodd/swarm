@@ -1,0 +1,89 @@
+#+TITLE: Swarm
+
+* Solver
+
+** Choosing services to start
+
+   1. Complete the set of all services to be started.
+
+      1. /Clones/ are additional services, needing to be qualified by
+         the container it is running in.
+
+      2. However, containers are themselves services.  We may not have
+         fully determined all clones until containers are running.  If
+         a set of containers only starts when needed, and clones of a
+         service only run in containers in that set, we need to
+         somehow indicate that these will be started.
+
+      3. How many containers start could depend on energy or other
+         resource constraints.  Somehow we need to this to propagate
+         to the computation of how many clones to create.
+
+   2. Figure out collocation groups.
+
+
+** Object types
+
+*** Resources
+    Everything is ultimately a resource.  Resources have:
+
+    - Name
+    - State
+
+    Some resources (clones) behave more like templates.
+
+
+*** Containers
+    These are nodes, virtual machines, etc. that contain other
+    resources.
+
+*** Services
+    These are resources that perform a service.  They are associated
+    with a selected container.
+
+
+** Possible strategies
+
+*** Build out
+
+    1. Start maximum number of containers consistent with energy
+       policy.
+    2. Repeatedly start whatever services can be run consistent with
+       the containers currently running.
+
+*** Build in
+
+    1. Figure out all resources that should be running.
+       - Clones should have a "minimum" target count (function of
+         energy / resource policies), or None to indicate that as many
+         as possible (which may mean start as many containers as
+         possible).
+       - Containers can not be cloned.  (Perhaps it can be done, but
+         it seems an unnecessary complication.)
+    2. For each resource that should be running, but isn't, determine
+       solutions to start that resource.  /Solutions/ have a weight, an
+       operation (?), a target container, and a list of solutions that
+       must be started in order beforehand.
+       - Determine lists of resources that, if they were running,
+         would allow this resource to start.
+	 + We need to detect loops
+	 + If a resource is already running, it is a preferred
+           solution.  (But we need to figure out migrations!)
+	 + For location constraints, any candidate target container is
+           a possible solution.  Be sure the location constraints are
+           compatible.
+	 + For ordering constraints, compute next round of solutions
+           by combining prerequisites with location constraints,
+           computing new scores.
+	 + Check candidate solutions against colocation constraints,
+           and remove those that won't work.
+	 + Rank solutions by weight.  Potentially any positive
+           solution works.
+       - We are interested in the last resource in each chain, i.e.,
+         the first resource that must be started to get the rest of
+         the chain working.  Several target services might require the
+         same first resource; in order of weights, select sets of run
+         containers from each solution, until a non-empty set is
+         selected (otherwise something can't be started!  Use
+         priorities to choose.).
+
