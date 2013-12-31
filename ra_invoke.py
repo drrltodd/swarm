@@ -13,8 +13,8 @@ agent methods."""
 import argparse
 import logging
 #
-from common import *
-import ra
+from swarm.common import *
+from swarm import ra
 
 def _main():
 
