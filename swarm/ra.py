@@ -6,7 +6,17 @@
 
 """Resource agents"""
 
-import subprocess
+__all__ = [ 'ResourceAgent',
+            'OcfResourceAgent', 'ServiceResourceAgent',
+            'open_resource_agent' ]
+
+class ResourceAgentError(Exception):
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
 
 class ResourceAgent(object):
 
@@ -21,6 +31,17 @@ class OcfResourceAgent(ResourceAgent):
     def __init__(self, sb, name, resloc):
         ResourceAgent.__init__(self, sb, name, resloc)
 
+        # Attempt to open the resource agent.
+        import os.path
+        rd = sb.cfg['Paths']['ocf-resource-agents']
+        rd = os.path.expanduser(rd)
+        #
+        self._radir = rd
+        self._rapath = os.path.join(rd, *(resloc.split(':')[1:]))
+        #
+        self._invoke('metadata', {})
+
+
     def _genEnv(self, params):
         """Generate environment mapping for OCF resources"""
         env = {}
@@ -28,11 +49,17 @@ class OcfResourceAgent(ResourceAgent):
             env['OCF_RESKEY_'+k] = v
         env['OCF_RA_VERSION_MAJOR'] = "1"
         env['OCF_RA_VERSION_MINOR'] = "0"
-        env['OCF_ROOT'] = "/usr/lib/ocf"
+        #env['OCF_ROOT'] = "/usr/lib/ocf"
+        env['OCF_ROOT'] = self._radir
         env['OCF_RESOURCE_INSTANCE'] = self.name
         # FIXME: OCF_RESOURCE_TYPE
         # FIXME: OCF_CHECK_LEVEL
         return env
+
+    def _invoke(self, methname, params):
+        import subprocess
+        rc = subprocess.call([self._rapath, methname],
+                             env=self._genEnv(params))
 
     def status(self, params):
         rc = subprocess('%s status' % (self.resloc,),
@@ -76,6 +103,6 @@ def open_resource_agent(sb, name, resloc):
         rah = ServiceResourceAgent(sb, name, resloc)
     else:
         sb.logger.error('Unknown resource class %s for %s', namespace, resloc)
-        rah = None
+        raise ResourceAgentError('oops')
 
     return rah

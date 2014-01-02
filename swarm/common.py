@@ -8,7 +8,6 @@ import argparse
 from configparser import ConfigParser, ExtendedInterpolation
 import logging, logging.handlers
 
-#__all__ = [ 'prepare_common_options', 'process_common_options' ]
 __all__ = [ 'SwarmBase' ]
 
 class SwarmBase(object):
