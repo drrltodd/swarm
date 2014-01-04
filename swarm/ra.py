@@ -37,9 +37,9 @@ class OcfResourceAgent(ResourceAgent):
         rd = os.path.expanduser(rd)
         #
         self._radir = rd
-        self._rapath = os.path.join(rd, *(resloc.split(':')[1:]))
+        self._rapath = os.path.join(rd, 'resource.d', *(resloc.split(':')[1:]))
         #
-        self._invoke('metadata', {})
+        self._invoke('meta-data', {})
 
 
     def _genEnv(self, params):
