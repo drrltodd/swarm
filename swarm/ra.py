@@ -39,12 +39,23 @@ class OcfResourceAgent(ResourceAgent):
         self._radir = rd
         self._rapath = os.path.join(rd, 'resource.d', *(resloc.split(':')[1:]))
         #
-        self._invoke('meta-data', {})
+        so,se,rc = self._invoke_get_results('meta-data', {})
+        if rc == 0:
+            import xml.etree.ElementTree as ET
+            eroot = ET.fromstring(so)
+            for E in eroot:
+                if E.tag == 'actions':
+                    adict = {}
+                    for A in E:
+                        adict[A.attrib['name']] = A.attrib
+                    self.allowed_actions = adict
+            print (self.allowed_actions)
 
 
     def _genEnv(self, params):
         """Generate environment mapping for OCF resources"""
-        env = {}
+        import os
+        env = dict(os.environ)
         for k,v in params.items():
             env['OCF_RESKEY_'+k] = v
         env['OCF_RA_VERSION_MAJOR'] = "1"
@@ -60,6 +71,16 @@ class OcfResourceAgent(ResourceAgent):
         import subprocess
         rc = subprocess.call([self._rapath, methname],
                              env=self._genEnv(params))
+
+    def _invoke_get_results(self, methname, params):
+        import subprocess
+        P = subprocess.Popen([self._rapath, methname],
+                             env=self._genEnv(params),
+                             close_fds=True,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        (so,se) = P.communicate(None)
+        return so,se,P.returncode
 
     def status(self, params):
         rc = subprocess('%s status' % (self.resloc,),
