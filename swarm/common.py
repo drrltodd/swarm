@@ -30,7 +30,7 @@ class SwarmBase(object):
         p.add_argument('--config', type=argparse.FileType('rt'),
                        help="Configuration file for local swarm installation",
                        default="swarm.cfg")
-        p.add_argument('--log', help='Location for logging')
+        p.add_argument('--log', help='Location for logging', nargs='?')
         p.add_argument('--verbosity', type=int, choices=range(4), default=1)
 
 
