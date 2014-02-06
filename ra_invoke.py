@@ -29,6 +29,8 @@ def _main():
                    nargs='+', type=s_argparse_kvpair, default=())
     p.add_argument('--meta', help='List of meta=value pairs',
                    nargs='+', type=s_argparse_kvpair, default=())
+    p.add_argument('--timeout', help='Time out for operation, 0 for never',
+                   type=int)
 
     # Parse, handling common operations.
     sb.parse_args()
@@ -41,7 +43,8 @@ def _main():
 
     # Get a resource agent handle.
     rah = ra.open_resource_agent(sb, args.name, args.ra)
-    rc = rah.invoke(args.method, dict(args.parameters), dict(args.meta))
+    rc = rah.invoke(args.method,
+                    dict(args.parameters), dict(args.meta), args.timeout)
     sys.exit(rc)
 
 if __name__ == '__main__':

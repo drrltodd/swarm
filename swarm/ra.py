@@ -46,11 +46,23 @@ class ResourceAgent(object):
         self.parameters = {}
         self.allowed_actions = {}
 
-    def invoke(self, op, params, meta):
+    def invoke(self, op, params, meta, timeout):
         """Invoke a method on the resource agent."""
         # Make sure the operation is supported
-        if op not in self.allowed_actions:
+        sb = self.sb
+        logger = sb.logger
+        adict = self.allowed_actions
+        if op not in adict:
+            logger.error('Operation %s not implemented by resource %s',
+                         op, self.name)
             return RC.err_unimplemented
+        if timeout is None and 'timeout' in adict[op]:
+            try:
+                timeout = int(adict[op]['timeout'])
+            except:
+                logger.error('Invalid timeout specified for operation %s by resource %s',
+                             op, self.name)
+                return RC.err_generic
         # Make sure each parameter is supported
         p = {}
         pdict = self.parameters
@@ -65,7 +77,7 @@ class ResourceAgent(object):
                 dv = pdict[pn]['default']
                 if dv is not None:
                     p[pn] = dv
-        return self._invoke(op, p, meta)
+        return self._invoke(op, p, meta, timeout)
 
 
 class OcfResourceAgent(ResourceAgent):
@@ -138,10 +150,14 @@ class OcfResourceAgent(ResourceAgent):
         # FIXME: OCF_CHECK_LEVEL
         return env
 
-    def _invoke(self, methname, params, meta):
+    def _invoke(self, methname, params, meta, timeout):
         import subprocess
+        kw = {}
+        if timeout is not None:
+            kw['timeout'] = timeout
         rc = subprocess.call([self._rapath, methname],
-                             env=self._genEnv(params, meta))
+                             env=self._genEnv(params, meta),
+                             **kw)
         return rc
 
     def _invoke_get_results(self, methname, params, meta={}):
