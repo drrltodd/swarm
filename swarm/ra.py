@@ -10,6 +10,19 @@ __all__ = [ 'ResourceAgent',
             'OcfResourceAgent', 'ServiceResourceAgent',
             'open_resource_agent' ]
 
+class RC:
+    success = 0
+    err_generic = 1
+    err_args = 2
+    err_unimplemented = 3
+    err_perm = 4
+    err_installed = 5
+    err_configured = 6
+    not_running = 7
+    running_master = 8
+    failed_master = 9
+
+
 class ResourceAgentError(Exception):
     def __init__(self, message):
         self.message = message
@@ -33,10 +46,11 @@ class ResourceAgent(object):
         self.parameters = {}
         self.allowed_actions = {}
 
-    def invoke(self, op, params):
+    def invoke(self, op, params, meta):
         """Invoke a method on the resource agent."""
         # Make sure the operation is supported
-        # FIXME:!!!
+        if op not in self.allowed_actions:
+            return RC.err_unimplemented
         # Make sure each parameter is supported
         p = {}
         pdict = self.parameters
@@ -45,14 +59,13 @@ class ResourceAgent(object):
                 # FIXME: Check type, etc.
                 p[pn] = params[pn]
             else:
-                # FIXME: Correct code!
-                return 1
+                return RC.err_args
         for pn in pdict:
             if pn not in p:
                 dv = pdict[pn]['default']
                 if dv is not None:
                     p[pn] = dv
-        return self._invoke(op, p)
+        return self._invoke(op, p, meta)
 
 
 class OcfResourceAgent(ResourceAgent):
@@ -108,30 +121,33 @@ class OcfResourceAgent(ResourceAgent):
                         adict[A.attrib['name']] = A.attrib
 
 
-    def _genEnv(self, params):
+    def _genEnv(self, params, meta):
         """Generate environment mapping for OCF resources"""
         import os
         env = dict(os.environ)
         for k,v in params.items():
             env['OCF_RESKEY_'+k] = v
+        for k,v in meta.items():
+            k1 = k.replace('-', '_')
+            env['OCF_RESKEY_CRM_meta_'+k1] = v
         env['OCF_RA_VERSION_MAJOR'] = "1"
         env['OCF_RA_VERSION_MINOR'] = "0"
-        #env['OCF_ROOT'] = "/usr/lib/ocf"
         env['OCF_ROOT'] = self._radir
         env['OCF_RESOURCE_INSTANCE'] = self.name
         # FIXME: OCF_RESOURCE_TYPE
         # FIXME: OCF_CHECK_LEVEL
         return env
 
-    def _invoke(self, methname, params):
+    def _invoke(self, methname, params, meta):
         import subprocess
         rc = subprocess.call([self._rapath, methname],
-                             env=self._genEnv(params))
+                             env=self._genEnv(params, meta))
+        return rc
 
-    def _invoke_get_results(self, methname, params):
+    def _invoke_get_results(self, methname, params, meta={}):
         import subprocess
         P = subprocess.Popen([self._rapath, methname],
-                             env=self._genEnv(params),
+                             env=self._genEnv(params, meta),
                              close_fds=True,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)

@@ -12,6 +12,7 @@ agent methods."""
 
 import argparse
 import logging
+import sys
 #
 from swarm.common import *
 from swarm import ra
@@ -25,7 +26,9 @@ def _main():
     p.add_argument('method', help='Name of method to invoke')
     p.add_argument('--name', help='Name of resource')
     p.add_argument('--parameters', help='List of parameter=value pairs',
-                   nargs='+', type=s_argparse_kvpair)
+                   nargs='+', type=s_argparse_kvpair, default=())
+    p.add_argument('--meta', help='List of meta=value pairs',
+                   nargs='+', type=s_argparse_kvpair, default=())
 
     # Parse, handling common operations.
     sb.parse_args()
@@ -38,9 +41,8 @@ def _main():
 
     # Get a resource agent handle.
     rah = ra.open_resource_agent(sb, args.name, args.ra)
-    print(rah)
-    print (dict(args.parameters))
-    rah.invoke(args.method, dict(args.parameters))
+    rc = rah.invoke(args.method, dict(args.parameters), dict(args.meta))
+    sys.exit(rc)
 
 if __name__ == '__main__':
     _main()
