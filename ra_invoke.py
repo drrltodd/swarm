@@ -24,6 +24,8 @@ def _main():
     p.add_argument('ra', help='Name of resource agent')
     p.add_argument('method', help='Name of method to invoke')
     p.add_argument('--name', help='Name of resource')
+    p.add_argument('--parameters', help='List of parameter=value pairs',
+                   nargs='+', type=s_argparse_kvpair)
 
     # Parse, handling common operations.
     sb.parse_args()
@@ -37,6 +39,8 @@ def _main():
     # Get a resource agent handle.
     rah = ra.open_resource_agent(sb, args.name, args.ra)
     print(rah)
+    print (dict(args.parameters))
+    rah.invoke(args.method, dict(args.parameters))
 
 if __name__ == '__main__':
     _main()

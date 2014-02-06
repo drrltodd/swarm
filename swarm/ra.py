@@ -21,9 +21,38 @@ class ResourceAgentError(Exception):
 class ResourceAgent(object):
 
     def __init__(self, sb, name, resloc):
+        """Initialize the resource agent object.
+        Parameters:
+            sb = Command object
+            name = Name of the resource agent
+            resloc = Location of the resource agent
+        """
         self.sb = sb
         self.name = name
         self.resloc = resloc
+        self.parameters = {}
+        self.allowed_actions = {}
+
+    def invoke(self, op, params):
+        """Invoke a method on the resource agent."""
+        # Make sure the operation is supported
+        # FIXME:!!!
+        # Make sure each parameter is supported
+        p = {}
+        pdict = self.parameters
+        for pn in params:
+            if pn in pdict:
+                # FIXME: Check type, etc.
+                p[pn] = params[pn]
+            else:
+                # FIXME: Correct code!
+                return 1
+        for pn in pdict:
+            if pn not in p:
+                dv = pdict[pn]['default']
+                if dv is not None:
+                    p[pn] = dv
+        return self._invoke(op, p)
 
 
 class OcfResourceAgent(ResourceAgent):
@@ -44,12 +73,39 @@ class OcfResourceAgent(ResourceAgent):
             import xml.etree.ElementTree as ET
             eroot = ET.fromstring(so)
             for E in eroot:
-                if E.tag == 'actions':
-                    adict = {}
+                if E.tag == 'parameters':
+                    pdict = self.parameters
+                    for P in E:
+                        pname = P.attrib['name']
+                        punique = int(P.attrib.get('unique', 0))
+                        prequired = int(P.attrib.get('required', 0))
+                        pshortdesc = ''
+                        plongdesc = ''
+                        ptype = 'string'
+                        pdefault = None
+                        for PA in P:
+                            if PA.tag == 'shortdesc':
+                                # FIXME: Need to handle language
+                                pshortdesc = PA.text
+                            elif PA.tag == 'longdesc':
+                                # FIXME: Need to handle language
+                                plongdesc = PA.text
+                            elif PA.tag == 'content':
+                                # FIXME: default 'default' depends on 'type'
+                                ptype = PA.attrib.get('type', 'string')
+                                pdefault = PA.attrib.get('default', None)
+                        pdict[pname] = {
+                            'name': pname,
+                            'unique': punique,
+                            'required': prequired,
+                            'shortdesc': pshortdesc,
+                            'longdesc': plongdesc,
+                            'type': ptype,
+                            'default': pdefault }
+                elif E.tag == 'actions':
+                    adict = self.allowed_actions
                     for A in E:
                         adict[A.attrib['name']] = A.attrib
-                    self.allowed_actions = adict
-            print (self.allowed_actions)
 
 
     def _genEnv(self, params):
@@ -115,7 +171,14 @@ class ServiceResourceAgent(ResourceAgent):
 
 
 def open_resource_agent(sb, name, resloc):
-    """Open a resource agent from its specification."""
+    """Open a resource agent from its specification.
+    Parameters:
+        sb = Command object
+        name = Name of the resource agent
+        resloc = Location of the resource agent
+    Returns:
+        - Handle to the resource agent object
+    """
     
     namespace = resloc.split(':')[0]
     if namespace == 'ocf':

@@ -8,7 +8,17 @@ import argparse
 from configparser import ConfigParser, ExtendedInterpolation
 import logging, logging.handlers
 
-__all__ = [ 'SwarmBase' ]
+__all__ = [
+    's_argparse_kvpair',
+    'SwarmBase' ]
+
+
+def s_argparse_kvpair(s):
+    k,e,v = s.partition('=')
+    if e != '=':
+        msg = "%r is not in key=value form" % s
+        raise argparse.ArgumentTypeError(msg)
+    return k,v
 
 class SwarmBase(object):
 
