@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2013 by R. Lindsay Todd.
+# Copyright (C) 2013,2014 by R. Lindsay Todd.
 # All rights reserved.
 #
 
