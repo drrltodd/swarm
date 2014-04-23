@@ -20,4 +20,25 @@ class SwarmLocalApp(SwarmBase):
 
     def parse_args(self):
         SwarmBase.parse_args(self)
+        self.process_options()
+
+    def process_options(self):
+        """Process options, reference config file."""
+
+        args = self.args
+        cfg = self.cfg
+
+        import os.path
+        raListFile = cfg['Paths']['ra-list']
+        raListFile = os.path.expanduser(raListFile)
+
+        # FIXME: What if the file doesn't exist?
+        # FIXME: Need to do MUCH more, and have options, etc.
+        raList = []
+        with open(raListFile) as f:
+            for L in f:
+                raList.append(L)
+        self.raList = raList
+
+        #
         self.daemon = self.args.daemon
