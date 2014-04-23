@@ -8,20 +8,20 @@
 
 import argparse
 #
-from swarm.common import *
+from swarm.lre import *
 
 def _main():
 
     # Define command line parser.
     p = argparse.ArgumentParser(description='Swarm local')
-    sb = SwarmBase(p)
-    p.add_argument('--daemon', help='Run as a daemon',
-                   action='store_true')
+    sla = SwarmLocalApp(p)
 
     # Parse
-    sb.parse_args()
-    args = sb.args
-    logger = sb.logger
+    sla.parse_args()
+    args = sla.args
+    logger = sla.logger
+
+    print (sla.daemon)
 
 
 
