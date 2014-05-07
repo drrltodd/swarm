@@ -10,7 +10,9 @@ __all__ = [ 'ResourceAgent',
             'OcfResourceAgent', 'ServiceResourceAgent',
             'open_resource_agent' ]
 
-class RC:
+from enum import IntEnum
+
+class RC(IntEnum):
     success = 0
     err_generic = 1
     err_args = 2
