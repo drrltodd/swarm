@@ -4,29 +4,28 @@
 # All rights reserved.
 #
 
-"""Resource agents"""
+"""Disjoint sets"""
 
-__all__ = [ 'ResourceSetGroup' ]
+__all__ = [ 'DisjointSet', 'DisjointSetCollection' ]
 
-
-class ResourceSet:
-    """An equivalence set of resources, by name"""
+class DisjointSet:
+    """An equivalence set"""
     def __init__(self, name):
         from weakref import WeakValueDictionary
         self.name = name
         self.parent = WeakValueDictionary()
-        self.rank = {}
+        self.members = {}
 
     def set_weight(self, w, parent=None):
         if parent:
             self.parent[w] = parent
         else:
             self.parent[w] = self
-        self.rank[w] = 0
+        self.members[w] = {self.name}
 
 
-class ResourceSetGroup:
-    """A group of resource sets, by name"""
+class DisjointSetCollection:
+    """A collection of disjoint sets"""
     
     def __init__(self):
         self._names = {}
@@ -39,7 +38,7 @@ class ResourceSetGroup:
             try:
                 ns = nd[n]
             except KeyError:
-                ns = nd[n] = ResourceSet(n)
+                ns = nd[n] = DisjointSet(n)
             ns.set_weight(w, nd[zn])
 
     def make_sets(self, w, *name_set):
@@ -59,24 +58,35 @@ class ResourceSetGroup:
         n.parent[w] = np
         return np
 
+    def find_members(self, w, x):
+        """Find all members equivalent to x of the same weight"""
+        r = self.find_root(w, x)
+        return r.members[w]
+
     def make_union(self, w, x, y):
         """Join sets"""
         x_root = self.find_root(w, x)
         y_root = self.find_root(w, y)
         if x_root is y_root:
             return
-        if x_root.rank[w] < y_root.rank[w]:
+        # Properly, we should maintain height.  Instead, we use size
+        # of the sets.  Pathological cases can be constructed, but
+        # generally we expect this to behave similarly.
+        xr_members = x_root.members[w]
+        yr_members = y_root.members[w]
+        if len(xr_members) <= len(yr_members):
             x_root.parent[w] = y_root
-        elif x_root.rank[w] > y_root.rank[w]:
-            y_root.parent[w] = x_root
+            yr_members |= xr_members
         else:
             y_root.parent[w] = x_root
-            x_root.rank[w] += 1
-
+            xr_members |= yr_members
 
 
 def _main():
-    rsg = ResourceSetGroup()
+    import gc
+    gc.enable()
+    #gc.set_debug(gc.DEBUG_SAVEALL)
+    rsg = DisjointSetCollection()
     rsg.make_sets(100, ['a'], ['b'], ['c'], ['d'], ['e'], ['f'], ['g'])
     rsg.make_sets(-90, 'c', 'd', 'e', 'f', 'g', 'h', 'i')
     rsg.make_union(100, 'a', 'b')
@@ -89,5 +99,12 @@ def _main():
         print(n, 100, rsg.find_root(100, n).name)
     for n in ('c', 'd', 'e', 'f', 'g', 'h', 'i'):
         print(n, -90, rsg.find_root(-90, n).name)
+    for n in ('a', 'b', 'c', 'd', 'e', 'f', 'g'):
+        print(n, 100, rsg.find_members(100, n))
+    for n in ('c', 'd', 'e', 'f', 'g', 'h', 'i'):
+        print(n, -90, rsg.find_members(-90, n))
+    rsg = None
+    gc.collect()
+    print(gc.garbage)
 
 _main()
