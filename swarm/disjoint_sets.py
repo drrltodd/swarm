@@ -9,14 +9,16 @@
 __all__ = [ 'DisjointSet', 'DisjointSetCollection' ]
 
 class DisjointSet:
-    """An equivalence set"""
+    """A member of an equivalence set, and possibly leader"""
     def __init__(self, name):
         from weakref import WeakValueDictionary
         self.name = name
         self.parent = WeakValueDictionary()
         self.members = {}
 
-    def set_weight(self, w, parent=None):
+
+    def set_parent(self, parent=None, w=None):
+        """Set the parent set of this member, which may be itself."""
         if parent:
             self.parent[w] = parent
         else:
@@ -27,41 +29,80 @@ class DisjointSet:
 class DisjointSetCollection:
     """A collection of disjoint sets"""
     
-    def __init__(self):
+    def __init__(self, factory=DisjointSet):
         self._names = {}
+        self._factory = factory
+
+    def make_singleton(self, name, w=None):
+        """Make a set with the single 'name' in it.
+
+        Parameters:
+            name = Name handle for this set member
+            w    = "Weight" of equivalence classes
+
+        Returns:
+            The singleton set object
+
+        It is possible that a singleton is requested that already
+        appears in the collection, in which case the member object is
+        returned, perhaps already belonging to equivalence classes.
+
+        The "weight" allows different equivalence classes to be created.
+        """
+
+        nd = self._names
+        try:
+            ns = nd[name]
+        except KeyError:
+            # We know it is fresh.
+            ns = nd[name] = self._factory(name)
+            ns.parent[w] = ns
+            ns.members[w] = {name}
+        else:
+            # Make sure we have entry to [w]
+            if w not in ns.parent:
+                # We haven't set up for [w] yet.
+                ns.parent[w] = ns
+                ns.members[w] = {name}
+        return ns
+
 
     def make_set(self, w, name_list):
-        """Make a set with the specified names in it."""
-        zn = name_list[0]
-        nd = self._names
-        for n in name_list:
-            try:
-                ns = nd[n]
-            except KeyError:
-                ns = nd[n] = DisjointSet(n)
-            ns.set_weight(w, nd[zn])
+        """Make a set of a list of names."""
+
+        first, *rest = [ self.make_singleton(n,w) for n in name_list ]
+        for r in rest:
+            #first.set_parent(first, w, r)
+            self.make_union(w, first, r)
+        return self.find_root(w, first.name)
+
 
     def make_sets(self, w, *name_set):
         """Make sets"""
         for n in name_set:
             self.make_set(w, n)
 
+
     def find_root(self, w, x):
         """Find the root of the set"""
         n = self._names[x]
         try:
             np = n.parent[w]
+            npp = np.parent[w]
         except KeyError:
             return None
-        while np.parent[w] != np:
-            np = np.parent[w]
+        while npp != np:
+            onp,np,npp = np,npp,npp.parent[w]
+            onp.parent[w] = npp
         n.parent[w] = np
         return np
+
 
     def find_members(self, w, x):
         """Find all members equivalent to x of the same weight"""
         r = self.find_root(w, x)
         return r.members[w]
+
 
     def make_union(self, w, x, y):
         """Join sets"""
