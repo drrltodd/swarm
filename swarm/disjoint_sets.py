@@ -32,6 +32,7 @@ class DisjointSetCollection:
     def __init__(self, factory=DisjointSet):
         self._names = {}
         self._factory = factory
+        self._roots = {}
 
     def make_singleton(self, name, w=None):
         """Make a set with the single 'name' in it.
@@ -56,14 +57,16 @@ class DisjointSetCollection:
         except KeyError:
             # We know it is fresh.
             ns = nd[name] = self._factory(name)
-            ns.parent[w] = ns
-            ns.members[w] = {name}
         else:
             # Make sure we have entry to [w]
-            if w not in ns.parent:
-                # We haven't set up for [w] yet.
-                ns.parent[w] = ns
-                ns.members[w] = {name}
+            if w in ns.parent:
+                # Already set up.
+                return ns
+        # We haven't set up for [w] yet.
+        ns.parent[w] = ns
+        ns.members[w] = {name}
+        
+        #self._roots[w] |= {name}
         return ns
 
 
