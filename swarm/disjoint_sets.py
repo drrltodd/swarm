@@ -65,8 +65,7 @@ class DisjointSetCollection:
         # We haven't set up for [w] yet.
         ns.parent[w] = ns
         ns.members[w] = {name}
-        
-        #self._roots[w] |= {name}
+        self._roots[w] = self._roots.get(w, set()) | {name}
         return ns
 
 
@@ -121,9 +120,15 @@ class DisjointSetCollection:
         if len(xr_members) <= len(yr_members):
             x_root.parent[w] = y_root
             yr_members |= xr_members
+            self._roots[w] -= {x_root.name}
         else:
             y_root.parent[w] = x_root
             xr_members |= yr_members
+            self._roots[w] -= {y_root.name}
+
+    def get_roots(self, w=None):
+        """Return a set of "roots", one for each equivalence class."""
+        return self._roots[w]
 
 
 def _main():
@@ -147,6 +152,8 @@ def _main():
         print(n, 100, rsg.find_members(100, n))
     for n in ('c', 'd', 'e', 'f', 'g', 'h', 'i'):
         print(n, -90, rsg.find_members(-90, n))
+    print(100, rsg.get_roots(100))
+    print(-90, rsg.get_roots(-90))
     rsg = None
     gc.collect()
     print(gc.garbage)
