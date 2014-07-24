@@ -17,15 +17,6 @@ class DisjointSet:
         self.members = {}
 
 
-    def set_parent(self, parent=None, w=None):
-        """Set the parent set of this member, which may be itself."""
-        if parent:
-            self.parent[w] = parent
-        else:
-            self.parent[w] = self
-        self.members[w] = {self.name}
-
-
 class DisjointSetCollection:
     """A collection of disjoint sets"""
     
@@ -74,8 +65,7 @@ class DisjointSetCollection:
 
         first, *rest = [ self.make_singleton(n,w) for n in name_list ]
         for r in rest:
-            #first.set_parent(first, w, r)
-            self.make_union(w, first, r)
+            self.make_union(w, first.name, r.name)
         return self.find_root(w, first.name)
 
 
