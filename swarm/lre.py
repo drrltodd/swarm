@@ -9,6 +9,7 @@
 __all__ = [ 'SwarmLocalApp' ]
 
 from swarm.common import *
+from collections import deque
 
 class SwarmLocalApp(SwarmBase):
 
@@ -17,6 +18,7 @@ class SwarmLocalApp(SwarmBase):
         p = self.p
         p.add_argument('--daemon', help='Run as a daemon',
                        action='store_true')
+        self.pending = deque()
 
     def parse_args(self):
         SwarmBase.parse_args(self)
@@ -42,3 +44,31 @@ class SwarmLocalApp(SwarmBase):
 
         #
         self.daemon = self.args.daemon
+
+    def mainloop(self):
+        """Main loop: Process resources."""
+
+        while True:
+            
+            # Loop over the resources.
+            for r in self.resources:
+
+                # Is this resource active?
+                if r.is_active():
+
+
+                    pass
+        
+
+
+class ProxyResource(object):
+
+    def __init__(self, ra):
+        self.ra = ra
+
+
+    def probe(self):
+        """Probe to see if this resource is active."""
+
+    def start(self):
+        """Start the real resource."""
